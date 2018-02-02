@@ -20,15 +20,15 @@ let streamThruMiddleware = S3StreamThru({
         return 'test.png';
     },
     getS3Id: function(req, callback) {
-        let fileUUID = req.header[''];
+        let fileUUID = req.header.fileUUID;
         redis.get(fileUUID, function (err, reply) {
             if (err || !reply) { return callback(err, reply); }
             console.log(reply);
             return callback(null, JSON.parse(reply));
         });
     },
-    setS3Id: function(req, callback) {
-        let fileUUID = req.header[''];
+    setS3Id: function(req, data, callback) {
+        let fileUUID = req.header.fileUUID;
         redis.set(fileUUID, JSON.stringify(data), callback);
     },
     log: console.log
@@ -43,4 +43,4 @@ app.get('/upload', (req, res) => {
 });
 
 
-app.listen(3000, () => console.log('Example app listening on port 3000!'));
+app.listen(3000, () => console.log('Example app listening on port 3000!\nPOST an image to /uppload to try it out'));
