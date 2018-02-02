@@ -1,6 +1,7 @@
 # S3StreamThru
 
-Middleware for express that basically acts like express body parser. However it does the following:
+Middleware for express that basically acts like express body parser. However it streams the post body directly to an S3 file.
+Intended to be used for direct binary file uploads from backgroumnd sessions in iOS and Android.
 
 ## Why?
 
