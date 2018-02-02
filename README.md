@@ -109,12 +109,28 @@ Note that the token payloads are Javascript objects, so you need to serialize th
     }
 ```
 
-## Use the middleware
+## Using the middleware
 
 Just install it before your application routes:
 
 ```js
 app.use(streamThruMiddleware);
 ```
+
+With the example, we have set the upload path as:
+
+```js
+    path: '/upload',
+```
+
+So after a multi-part POST upload to /upload successfully completes all parts, the route will finally be called on whichever server instance accepts and successfully assembles the final piece:
+
+```js
+app.post('/upload', (req, res, next) => {
+    console.log('s3 path', req.s3path);
+});
+```
+
+## Example
 
 See the example for a working demonstration (you need to supply your own AWS credentials and S3 bucket / key).
