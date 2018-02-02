@@ -3,9 +3,9 @@ const express = require('express');
 const redis = require('redis').createClient();
 const app = express();
 
-const s3StreamThru = require('./s3StreamThru.js');
+const S3StreamThru = require('../lib');
 
-let streamThru = s3StreamThru({
+let streamThruMiddleware = S3StreamThru({
     path: '/upload',
     s3Options: {
         accessKeyId: process.env.AWS_ACCESS_KEY || "******************",
@@ -34,7 +34,7 @@ let streamThru = s3StreamThru({
     log: console.log
 });
 
-app.use(streamThru);
+app.use(streamThruMiddleware);
 
 app.get('/', (req, res) => res.send('Hello World!'));
 
