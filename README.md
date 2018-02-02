@@ -46,20 +46,14 @@ let streamThruMiddleware = S3StreamThru({
         bucket: process.env.AWS_BUCKET || '****.****.****',
         path: '/'
     },
-    getFileName: function(req) {
-        return 'test.png';
+    getFileName: function(req) {                        // return the name for this upload
+        return ..... ;
     },
-    getS3Id: function(req, callback) {
-        let fileUUID = req.header[''];
-        redis.get(fileUUID, function (err, reply) {
-            if (err || !reply) { return callback(err, reply); }
-            console.log(reply);
-            return callback(null, JSON.parse(reply));
-        });
+    getS3Id: function(req, callback) {                  // return the token object for this upload
+        return callback( null, .... );
     },
-    setS3Id: function(req, callback) {
-        let fileUUID = req.header[''];
-        redis.set(fileUUID, JSON.stringify(data), callback);
+    setS3Id: function(req, data, callback) {            // persist the token object for this upload
+        return callback( null, .... );
     },
     log: console.log
 });
