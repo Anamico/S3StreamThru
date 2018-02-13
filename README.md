@@ -1,7 +1,7 @@
 # S3StreamThru
 
 Middleware for express that basically acts like express body parser. However it streams the post body directly to an S3 file.
-Intended to be used for direct binary file uploads from backgroumnd sessions in iOS and Android.
+Intended to be used for direct binary file uploads from background sessions in iOS and Android.
 
 ## Why?
 
@@ -46,20 +46,14 @@ let streamThruMiddleware = S3StreamThru({
         bucket: process.env.AWS_BUCKET || '****.****.****',
         path: '/'
     },
-    getFileName: function(req) {
-        return 'test.png';
+    getFileName: function(req) {                        // return the name for this upload
+        return ..... ;
     },
-    getS3Id: function(req, callback) {
-        let fileUUID = req.header[''];
-        redis.get(fileUUID, function (err, reply) {
-            if (err || !reply) { return callback(err, reply); }
-            console.log(reply);
-            return callback(null, JSON.parse(reply));
-        });
+    getS3Id: function(req, callback) {                  // return the token object for this upload
+        return callback( null, .... );
     },
-    setS3Id: function(req, callback) {
-        let fileUUID = req.header[''];
-        redis.set(fileUUID, JSON.stringify(data), callback);
+    setS3Id: function(req, data, callback) {            // persist the token object for this upload
+        return callback( null, .... );
     },
     log: console.log
 });
@@ -115,12 +109,28 @@ Note that the token payloads are Javascript objects, so you need to serialize th
     }
 ```
 
-## Use the middleware
+## Using the middleware
 
 Just install it before your application routes:
 
 ```js
 app.use(streamThruMiddleware);
 ```
+
+With the example, we have set the upload path as:
+
+```js
+    path: '/upload',
+```
+
+So after a multi-part POST upload to /upload successfully completes all parts, the route will finally be called on whichever server instance accepts and successfully assembles the final piece:
+
+```js
+app.post('/upload', (req, res, next) => {
+    console.log('s3 path', req.s3path);
+});
+```
+
+## Example
 
 See the example for a working demonstration (you need to supply your own AWS credentials and S3 bucket / key).
