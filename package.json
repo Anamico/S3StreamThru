@@ -1,17 +1,35 @@
 {
-  "name": "s3stream",
-  "version": "1.0.0",
-  "description": "",
+  "name": "S3StreamThru",
+  "version": "0.1.0",
+  "description": "express middleware to handle resumable multipart streaming uploads to s3",
   "main": "index.js",
   "scripts": {
+    "example": "nodemon example",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "s3",
+    "streaming",
+    "stream",
+    "amazon",
+    "upload",
+    "middleware",
+    "express"
+  ],
+  "author": "Andrew <manager@imagineit.com.au>",
+  "license": "MIT",
   "dependencies": {
     "async": "^2.6.0",
     "aws-sdk": "^2.188.0",
     "express": "^4.16.2",
     "redis": "^2.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Anamico/S3StreamThru.git"
+  },
+  "directories": {
+    "example": "example",
+    "lib": "lib"
   }
 }

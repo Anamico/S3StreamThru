@@ -16,31 +16,51 @@ let streamThruMiddleware = S3StreamThru({
         bucket: process.env.AWS_BUCKET || '****.****.****',
         path: '/'
     },
-    getFileName: function() {
-        return 'test.png';
+    getFilename: function(req) {
+        return req.headers.filename;
     },
     getS3Id: function(req, callback) {
-        let fileUUID = req.header.fileUUID;
-        redis.get(fileUUID, function (err, reply) {
+        let fileuuid = req.headers.fileuuid;
+        redis.get(fileuuid, function (err, reply) {
             if (err || !reply) { return callback(err, reply); }
             console.log(reply);
             return callback(null, JSON.parse(reply));
         });
     },
     setS3Id: function(req, data, callback) {
-        let fileUUID = req.header.fileUUID;
-        redis.set(fileUUID, JSON.stringify(data), callback);
+        let fileuuid = req.headers.fileuuid;
+        redis.set('file_' + fileuuid, JSON.stringify(data), callback);
+    },
+    partCompleted: function(req, eTag, callback) {
+        let fileuuid = req.headers.fileuuid;
+        let redisKey = 'parts_' + fileuuid;
+        redis.hset(redisKey, req.headers.part || 1, eTag, function(err, response) {
+            if (err) {
+                return callback(err);
+            }
+            redis.hgetall(redisKey, function(err, parts) {
+                let status = {
+                    expecting: parseInt(req.headers.totalparts),
+                    parts: parts
+                };
+                return callback(err, status);
+            })
+        });
     },
     log: console.log
 });
 
 app.use(streamThruMiddleware);
 
-app.get('/', (req, res) => res.send('Hello World!'));
+app.get('/', (req, res) => res.send('POST a file to http://localhost:3000/upload!'));
 
-app.get('/upload', (req, res) => {
-    res.send('Chunk Upload Success!');
+app.post('/upload', (req, res) => {
+    // clean up
+    let fileuuid = req.headers.fileuuid;
+    redis.del('file_' + fileuuid);
+    redis.del('parts_' + fileuuid);
+    res.send('Chunk Upload Success!', req.headers.fileuuid, ' -> ', req.s3Path);
 });
 
 
-app.listen(3000, () => console.log('Example app listening on port 3000!\nPOST an image to /uppload to try it out'));
+app.listen(3000, () => console.log('Example app running.\n\nPOST an image to http://localhost:3000/upload to try it out'));
