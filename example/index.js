@@ -2,11 +2,28 @@
 const express = require('express');
 const redis = require('redis').createClient();
 const app = express();
-
+//const ScriptManager = require("redis-scripts");
 const S3StreamThru = require('../lib');
+const async = require('async');
+const fs = require('fs');
+var sm = null;
+
+//redis.on("ready", function (err) {
+//    sm = new ScriptManager(redis);
+//
+//    // Load all Lua scripts in a directory into Redis
+//    sm.load("./findorcreate.lua", function (err) {
+//        if (err) {
+//            console.log("Error " + err);
+//            process.exit(1);
+//        }
+//    });
+//});
+
+const findOrCreate = fs.readFileSync(__dirname + '/findorcreate.lua');
 
 let streamThruMiddleware = S3StreamThru({
-    path: '/upload',
+    path: '/upload',                        // this is the route for the middleware
     s3Options: {
         accessKeyId: process.env.AWS_ACCESS_KEY || "******************",
         secretAccessKey: process.env.AWS_SECRET_KEY || "**********************",
@@ -17,23 +34,37 @@ let streamThruMiddleware = S3StreamThru({
         timeout: 240
     },
     s3: {
-        bucket: process.env.AWS_BUCKET || '****.****.****',
-        path: 'upload/'
+        bucket: process.env.AWS_BUCKET || '****.****.****'
     },
-    getFilename: function(req) {
+    getPath: function(req) {                    // used to avoid namespace clashes
+        return 'upload/' + req.headers.fileuuid + '/';
+    },
+    getFilename: function(req) {                // recommend using the file upload name to retain the same name on later downloads
         return req.headers.filename;
     },
     getS3Id: function(req, callback) {
         let fileuuid = req.headers.fileuuid;
-        redis.get(fileuuid, function (err, reply) {
-            if (err || !reply) { return callback(err, reply); }
-            console.log('uploading', fileuuid, reply);
-            return callback(null, JSON.parse(reply));
-        });
+        let redisKey = 'file_' + fileuuid;
+        // NOTE: This MUST be atomic!
+        // otherwise you may get 2 parts of the same file arrive concurrently and be assigned different S3 ids. So the whole thing fails to complete
+        // can use this lua for an atomic operation hack on a single server installation, or maybe redlock as an option in bigger installations.
+        async.retry({times: 200, interval: 1000}, function(callback) {
+            console.log('retry block', redisKey);
+            redis.eval(findOrCreate, 1, redisKey, function (err, reply) {
+                if (err || reply == '') {
+                    callback(new Error('retry'));
+                    return
+                }
+                console.log('uploading', redisKey, reply);
+                return callback(null, (reply != 'NEW') && JSON.parse(reply));
+            });
+        }, callback);
     },
     setS3Id: function(req, data, callback) {
         let fileuuid = req.headers.fileuuid;
-        redis.set('file_' + fileuuid, JSON.stringify(data), callback);
+        let redisKey = 'file_' + fileuuid;
+        console.log('set', redisKey, data);
+        redis.set(redisKey, JSON.stringify(data), callback);
     },
     partEtag: function(req, callback) {
         let fileuuid = req.headers.fileuuid;
@@ -69,6 +100,7 @@ let streamThruMiddleware = S3StreamThru({
     },
     log: console.log
 });
+
 
 app.use(streamThruMiddleware);
 
